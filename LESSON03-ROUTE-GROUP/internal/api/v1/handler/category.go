@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"minhbao.com/hoc-golang/utils"
 )
 
 type CategoryHandler struct {
@@ -22,9 +23,8 @@ func NewCategoryHandler() *CategoryHandler {
 func (c *CategoryHandler) GetCategoryByCategoryV1(ctx *gin.Context) {
 	category := ctx.Param("category")
 
-	if !validCategory[category] {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Category must be one of: php, python, golang"})
-		return
+	if err := utils.ValidationInList("Category", category, validCategory); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	}
 	ctx.JSON(http.StatusOK, gin.H{
 		"message":  "Category found",

@@ -6,13 +6,16 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"minhbao.com/hoc-golang/utils"
 )
 
 type ProductHandler struct {
 }
 
-var slugRegex = regexp.MustCompile(`^[a-z0-9]+(?:[-.][a-z0-9]+)*$`)
-var searchRegex = regexp.MustCompile(`^[a-zA-Z0-9\s]+$`)
+var (
+	slugRegex   = regexp.MustCompile(`^[a-z0-9]+(?:[-.][a-z0-9]+)*$`)
+	searchRegex = regexp.MustCompile(`^[a-zA-Z0-9\s]+$`)
+)
 
 func NewProductHandler() *ProductHandler {
 	return &ProductHandler{}
@@ -21,18 +24,18 @@ func NewProductHandler() *ProductHandler {
 func (u *ProductHandler) GetProductsV1(ctx *gin.Context) {
 	search := ctx.Query("search")
 
-	if search == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Search is required"})
+	if err := utils.ValidationRequired("Search", search); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if len(search) < 3 || len(search) > 50 {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Search must be between 3 and 50 characters"})
+	if err := utils.ValidationStringLength("Search", search, 3, 50); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if !searchRegex.MatchString(search) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Search much contain only letters, numbers and space"})
+	if err := utils.ValidationRegex("Search", search, searchRegex, "must contain only letters, numbers and space"); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -52,8 +55,8 @@ func (u *ProductHandler) GetProductsV1(ctx *gin.Context) {
 func (u *ProductHandler) GetProductsBySlugV1(ctx *gin.Context) {
 	slug := ctx.Param("slug")
 
-	if !slugRegex.MatchString(slug) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Slug must contain only lowercase letter, numbers, hyphens and dots"})
+	if err := utils.ValidationRegex("Slug", slug, slugRegex, "must contain only lowercase letter, numbers, hyphens and dots"); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
