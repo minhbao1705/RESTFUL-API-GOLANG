@@ -69,3 +69,7 @@ func RegisterValidators() error {
 
 	return nil
 }
+
+// func MinMaxPrice() error {
+
+// }
