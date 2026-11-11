@@ -2,7 +2,9 @@ package utils
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -32,6 +34,10 @@ func HandleValidationErrors(err error) gin.H {
 				errors[e.Field()] = fmt.Sprintf("%s phải nhiều hơn %s ký tự", e.Field(), e.Param())
 			case "max":
 				errors[e.Field()] = fmt.Sprintf("%s phải ít hơn %s ký tự", e.Field(), e.Param())
+			case "min_int":
+				errors[e.Field()] = fmt.Sprintf("%s phải có giá trị lớn hơn %s", e.Field(), e.Param())
+			case "max_int":
+				errors[e.Field()] = fmt.Sprintf("%s phải có giá trị bé hơn %s", e.Field(), e.Param())
 			case "oneof":
 				allowedValues := strings.Join(strings.Split(e.Param(), " "), ",")
 				errors[e.Field()] = fmt.Sprintf("%s chỉ được chứa các ký tự: %s", e.Field(), allowedValues)
@@ -43,6 +49,9 @@ func HandleValidationErrors(err error) gin.H {
 				errors[e.Field()] = e.Field() + " phải đúng điều kiện email"
 			case "datetime":
 				errors[e.Field()] = e.Field() + " phải theo đúng định dạng YYYY-MM-DD"
+			case "file_ext":
+				allowedValues := strings.Join(strings.Split(e.Param(), " "), ",")
+				errors[e.Field()] = fmt.Sprintf("%s chỉ cho phép những file có extension: %s", e.Field(), allowedValues)
 			}
 		}
 		return gin.H{"error": errors}
@@ -67,9 +76,52 @@ func RegisterValidators() error {
 		return searchRegex.MatchString(fl.Field().String())
 	})
 
+	v.RegisterValidation("min_int", func(fl validator.FieldLevel) bool {
+		minStr := fl.Param()
+		// Base
+		// 10: Hệ thập phân (decimal)
+		// 16: Hệ thập lục phân (hex, ví dụ "FF" => 255)
+		// 2: Hệ nhị phân (binary, ví dụ "1010" => 10)
+		minVal, err := strconv.ParseInt(minStr, 10, 64)
+		if err != nil {
+			return false
+		}
+
+		return fl.Field().Int() >= minVal
+	})
+
+	v.RegisterValidation("max_int", func(fl validator.FieldLevel) bool {
+		maxStr := fl.Param()
+		// Base
+		// 10: Hệ thập phân (decimal)
+		// 16: Hệ thập lục phân (hex, ví dụ "FF" => 255)
+		// 2: Hệ nhị phân (binary, ví dụ "1010" => 10)
+		maxVal, err := strconv.ParseInt(maxStr, 10, 64)
+		if err != nil {
+			return false
+		}
+
+		return fl.Field().Int() >= maxVal
+	})
+
+	v.RegisterValidation("file_ext", func(fl validator.FieldLevel) bool {
+		filename := fl.Field().String()
+
+		allowedStr := fl.Param()
+		if allowedStr == "" {
+			return false
+		}
+
+		allowedExt := strings.Fields(allowedStr)
+		ext := strings.TrimPrefix(strings.ToLower(filepath.Ext(filename)), ".")
+
+		for _, allowed := range allowedExt {
+			if ext == strings.ToLower(allowed) {
+				return true
+			}
+		}
+		return false
+	})
+
 	return nil
 }
-
-// func MinMaxPrice() error {
-
-// }

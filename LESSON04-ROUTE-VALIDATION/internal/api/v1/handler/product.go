@@ -24,13 +24,13 @@ type GetProductsV1Param struct {
 
 type ProductImage struct {
 	ImageName string `json:"image_name" binding:"required"`
-	ImageLink string `json:"image_link" binding:"required"`
+	ImageLink string `json:"image_link" binding:"required,file_ext=jpg png gif"`
 }
 
 type PostProductsV1Param struct {
 	Name         string       `json:"name" binding:"required,min=3,max=100"`
-	Price        int          `json:"price" binding:"required,min=10000"`
-	Display      bool         `json:"display" binding:"omitempty"`
+	Price        int          `json:"price" binding:"required,min_int=10000"`
+	Display      *bool        `json:"display" binding:"omitempty"`
 	ProductImage ProductImage `json:"product_image" binding:"required"`
 }
 
@@ -84,6 +84,11 @@ func (u *ProductHandler) PostProductsV1(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&params); err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
 		return
+	}
+
+	if params.Display == nil {
+		defaultDisplay := true
+		params.Display = &defaultDisplay
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{
