@@ -4,11 +4,16 @@ import (
 	"github.com/gin-gonic/gin"
 	v1handler "minhbao.com/hoc-golang/internal/api/v1/handler"
 	v2handler "minhbao.com/hoc-golang/internal/api/v2/handler"
+	"minhbao.com/hoc-golang/utils"
 )
 
 func main() {
 
 	r := gin.Default()
+
+	if err := utils.RegisterValidators(); err != nil {
+		panic(err)
+	}
 
 	v1 := r.Group("/api/v1")
 	{
