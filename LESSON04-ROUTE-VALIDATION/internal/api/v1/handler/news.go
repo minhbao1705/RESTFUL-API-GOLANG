@@ -39,7 +39,7 @@ func (n *NewsHandler) GetNewsV1(ctx *gin.Context) {
 
 }
 
-func (c *NewsHandler) PostNewsV1(ctx *gin.Context) {
+func (n *NewsHandler) PostNewsV1(ctx *gin.Context) {
 	var params PostNewsV1Param
 	if err := ctx.ShouldBind(&params); err != nil {
 		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
@@ -49,6 +49,14 @@ func (c *NewsHandler) PostNewsV1(ctx *gin.Context) {
 	image, err := ctx.FormFile("image")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
+		return
+	}
+
+	// Yêu cầu giới hạn file nhỏ hơn 5MB
+	// 1 << 20 = 1 * 2^20 = 1 * 1048576 = 1MB
+	// 5 << 20 = 5 * 2^20 = 5 * 1048576 = 5MB
+	if image.Size > 5<<20 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File too large (5 MB)"})
 		return
 	}
 
@@ -73,5 +81,33 @@ func (c *NewsHandler) PostNewsV1(ctx *gin.Context) {
 		"status":  params.Status,
 		"image":   image.Filename,
 		"path":    dst,
+	})
+}
+
+func (n *NewsHandler) PostUploadFileNewsV1(ctx *gin.Context) {
+	var params PostNewsV1Param
+	if err := ctx.ShouldBind(&params); err != nil {
+		ctx.JSON(http.StatusBadRequest, utils.HandleValidationErrors(err))
+		return
+	}
+
+	image, err := ctx.FormFile("image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "File is required"})
+		return
+	}
+
+	filename, err := utils.ValidateAndSaveFile(image, "./uploads")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Post news (V1)",
+		"title":   params.Title,
+		"status":  params.Status,
+		"image":   filename,
+		"path":    "./uploads/" + filename,
 	})
 }
