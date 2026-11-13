@@ -1,7 +1,10 @@
 package main
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	v1handler "minhbao.com/hoc-golang/internal/api/v1/handler"
 	v2handler "minhbao.com/hoc-golang/internal/api/v2/handler"
 	"minhbao.com/hoc-golang/middleware"
@@ -14,9 +17,14 @@ func main() {
 		panic(err)
 	}
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("No .env file found")
+	}
+
 	r := gin.Default()
 
-	// r.Use(middleware.SimpleMiddleware())
+	r.Use(middleware.ApiKeyMiddleware())
 
 	v1 := r.Group("/api/v1")
 	{
@@ -41,7 +49,7 @@ func main() {
 			product.DELETE("/:id", productHandlerv1.DeleteProductsV1)
 		}
 
-		category := v1.Group("/categories").Use(middleware.SimpleMiddleware())
+		category := v1.Group("/categories")
 		{
 			categoryHandlerv1 := v1handler.NewCategoryHandler()
 			category.GET("/:category", categoryHandlerv1.GetCategoryByCategoryV1)
@@ -52,7 +60,7 @@ func main() {
 		{
 			newsHandlerv1 := v1handler.NewNewsHandler()
 			news.GET("/", newsHandlerv1.GetNewsV1)
-			news.GET("/:slug", middleware.SimpleMiddleware(), newsHandlerv1.GetNewsV1)
+			news.GET("/:slug", newsHandlerv1.GetNewsV1)
 			news.POST("/", newsHandlerv1.PostNewsV1)
 			news.POST("/upload-file", newsHandlerv1.PostUploadFileNewsV1)
 			news.POST("/upload-mutltiple-file", newsHandlerv1.PostUploadMultipleFileNewsV1)
