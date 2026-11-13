@@ -4,16 +4,19 @@ import (
 	"github.com/gin-gonic/gin"
 	v1handler "minhbao.com/hoc-golang/internal/api/v1/handler"
 	v2handler "minhbao.com/hoc-golang/internal/api/v2/handler"
+	"minhbao.com/hoc-golang/middleware"
 	"minhbao.com/hoc-golang/utils"
 )
 
 func main() {
 
-	r := gin.Default()
-
 	if err := utils.RegisterValidators(); err != nil {
 		panic(err)
 	}
+
+	r := gin.Default()
+
+	// r.Use(middleware.SimpleMiddleware())
 
 	v1 := r.Group("/api/v1")
 	{
@@ -38,7 +41,7 @@ func main() {
 			product.DELETE("/:id", productHandlerv1.DeleteProductsV1)
 		}
 
-		category := v1.Group("/categories")
+		category := v1.Group("/categories").Use(middleware.SimpleMiddleware())
 		{
 			categoryHandlerv1 := v1handler.NewCategoryHandler()
 			category.GET("/:category", categoryHandlerv1.GetCategoryByCategoryV1)
@@ -49,7 +52,7 @@ func main() {
 		{
 			newsHandlerv1 := v1handler.NewNewsHandler()
 			news.GET("/", newsHandlerv1.GetNewsV1)
-			news.GET("/:slug", newsHandlerv1.GetNewsV1)
+			news.GET("/:slug", middleware.SimpleMiddleware(), newsHandlerv1.GetNewsV1)
 			news.POST("/", newsHandlerv1.PostNewsV1)
 			news.POST("/upload-file", newsHandlerv1.PostUploadFileNewsV1)
 			news.POST("/upload-mutltiple-file", newsHandlerv1.PostUploadMultipleFileNewsV1)
