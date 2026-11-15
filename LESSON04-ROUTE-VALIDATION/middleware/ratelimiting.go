@@ -16,7 +16,7 @@ type Client struct {
 }
 
 var (
-	mu sync.Mutex
+	mu      sync.Mutex
 	clients = make(map[string]*Client)
 )
 
@@ -51,7 +51,7 @@ func CLeanupClients() {
 		time.Sleep(time.Minute)
 		mu.Lock()
 		for ip, client := range clients {
-			if time.Since(client.lastSeen) > 3 * time.Minute {
+			if time.Since(client.lastSeen) > 3*time.Minute {
 				delete(clients, ip)
 			}
 		}
@@ -69,9 +69,11 @@ func RateLimitingMiddleware() gin.HandlerFunc {
 		limiter := getRateLimiter(ip)
 		if !limiter.Allow() {
 			ctx.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
-				"error": "Too many reques",
+				"error":   "Too many reques",
 				"message": "Bạn đã gửi quá nhiều request. Hãy thử lại sau",
 			})
+			return
 		}
+		ctx.Next()
 	}
 }
