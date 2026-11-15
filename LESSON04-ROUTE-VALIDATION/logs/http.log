@@ -1,16 +1,16 @@
 {
-    "level": "warn",
-    "method": "GET",
-    "path": "/api/v1/categories/python",
-    "query": "name=Bao",
+    "level": "info",
+    "method": "POST",
+    "path": "/api/v1/news/",
+    "query": "",
     "client_ip": "::1",
     "user_agent": "PostmanRuntime/2.16.2",
-    "referer": "",
+    "referer": "http://localhost:8080/api/v1/news",
     "protocol": "HTTP/1.1",
     "host": "localhost:8080",
-    "remote_address": "[::1]:54664",
-    "request_uri": "/api/v1/categories/python?name=Bao",
-    "content_length": 0,
+    "remote_address": "[::1]:52304",
+    "request_uri": "/api/v1/news/",
+    "content_length": 114818,
     "headers": {
         "Accept": [
             "*/*"
@@ -21,15 +21,45 @@
         "Connection": [
             "keep-alive"
         ],
+        "Content-Length": [
+            "114818"
+        ],
+        "Content-Type": [
+            "multipart/form-data; boundary=--------------------------654853291239156987894173"
+        ],
         "Postman-Token": [
-            "4932572b-d768-4733-9530-25c1344c0d13"
+            "7b254ca2-9bdb-4dbb-8a88-620ef65840af"
+        ],
+        "Referer": [
+            "http://localhost:8080/api/v1/news"
         ],
         "User-Agent": [
             "PostmanRuntime/2.16.2"
+        ],
+        "X-Api-Key": [
+            "419c7a3a-3642-4678-b9b5-0a6572a191cb"
         ]
     },
-    "status_code": 400,
-    "duration_ms": 0,
-    "time": "2026-11-15T17:03:48+07:00",
+    "request_body": {
+        "form_files": [
+            {
+                "content_type": "image/png",
+                "field": "image",
+                "filename": "Screenshot 2023-09-24 132317.png",
+                "size": "106.08 KB"
+            },
+            {
+                "content_type": "image/jpeg",
+                "field": "image",
+                "filename": "000231_0.jpg",
+                "size": "5.43 KB"
+            }
+        ],
+        "status": "1",
+        "title": "Bài 01 Lập trình Golang Cơ Bản"
+    },
+    "status_code": 201,
+    "duration_ms": 11036,
+    "time": "2026-11-15T21:25:19+07:00",
     "message": "HTTP Request log"
 }

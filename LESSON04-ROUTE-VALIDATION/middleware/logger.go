@@ -1,8 +1,14 @@
 package middleware
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,6 +31,63 @@ func LoggerMiddleware() gin.HandlerFunc {
 
 	return func(ctx *gin.Context) {
 		start := time.Now()
+		contentType := ctx.GetHeader("Content-Type")
+		requestbody := make(map[string]any)
+		var formFiles []map[string]any
+
+		// multipart/form-data
+		if strings.HasPrefix(contentType, "multipart/form-data") {
+			if ctx.Request.ParseMultipartForm(32 << 20); err == nil && ctx.Request.MultipartForm != nil {
+				// for value
+				for key, vals := range ctx.Request.MultipartForm.Value {
+					if len(vals) == 1 {
+						requestbody[key] = vals[0]
+					} else {
+						requestbody[key] = vals
+					}
+				}
+				// for file
+				for field, files := range ctx.Request.MultipartForm.File {
+					for _, f := range files {
+						formFiles = append(formFiles, map[string]any{
+							"field":        field,
+							"filename":     f.Filename,
+							"size":         formatFileSize(f.Size),
+							"content_type": f.Header.Get("Content-Type"),
+						})
+					}
+				}
+
+				if len(formFiles) > 0 {
+					requestbody["form_files"] = formFiles
+				}
+			}
+
+		} else {
+
+			bodyBytes, err := io.ReadAll(ctx.Request.Body)
+			if err != nil {
+				logger.Error().Err(err).Msg("Failed to read request body")
+			}
+
+			ctx.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+			// application.json
+			if strings.HasPrefix(contentType, "application/json") {
+				_ = json.Unmarshal(bodyBytes, &requestbody)
+			} else {
+				// application/x-www-form-urlencoded
+				values, _ := url.ParseQuery(string(bodyBytes))
+				for key, vals := range values {
+					if len(vals) == 1 {
+						requestbody[key] = vals[0]
+					} else {
+						requestbody[key] = vals
+					}
+				}
+			}
+
+		}
 
 		ctx.Next()
 
@@ -52,8 +115,20 @@ func LoggerMiddleware() gin.HandlerFunc {
 			Str("request_uri", ctx.Request.RequestURI).
 			Int64("content_length", ctx.Request.ContentLength).
 			Interface("headers", ctx.Request.Header).
+			Interface("request_body", requestbody).
 			Int("status_code", statusCode).
 			Int64("duration_ms", duration.Microseconds()).
 			Msg("HTTP Request log")
+	}
+}
+
+func formatFileSize(size int64) string {
+	switch {
+	case size >= 1<<20:
+		return fmt.Sprintf("%.2f MB", float64(size)/(1<<20))
+	case size >= 1<<10:
+		return fmt.Sprintf("%.2f KB", float64(size)/(1<<10))
+	default:
+		return fmt.Sprintf("%d B", size)
 	}
 }
