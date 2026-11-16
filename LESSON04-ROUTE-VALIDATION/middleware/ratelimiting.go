@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -34,14 +33,14 @@ func getRateLimiter(ip string) *rate.Limiter {
 	defer mu.Unlock()
 	client, exits := clients[ip]
 	if !exits {
-		limiter := rate.NewLimiter(5, 15) // 5 request/sec, brust 10
+		limiter := rate.NewLimiter(5, 10) // 5 request/sec, brust 10
 		newClient := &Client{limiter, time.Now()}
 		clients[ip] = newClient
-		log.Printf("A client[%s] - {limiter: %+v, lastSeen: %s}", ip, newClient.limiter, newClient.lastSeen)
+		// log.Printf("A client[%s] - {limiter: %+v, lastSeen: %s}", ip, newClient.limiter, newClient.lastSeen)
 		return limiter
 	}
 
-	log.Printf("A client[%s] - {limiter: %+v, lastSeen: %s}", ip, client.limiter, client.lastSeen)
+	// log.Printf("A client[%s] - {limiter: %+v, lastSeen: %s}", ip, client.limiter, client.lastSeen)
 	client.lastSeen = time.Now()
 	return client.limiter
 }
@@ -59,12 +58,12 @@ func CLeanupClients() {
 	}
 }
 
-// ab -n 20 -c 1 -H "X-API-KEY:419c7a3a-3642-4678-b9b5-0a6572a191cb" localhost:8080/api/v1/categories/python
+// ab -n 2000 -c 1 -H "X-API-KEY:419c7a3a-3642-4678-b9b5-0a6572a191cb" localhost:8080/api/v1/categories/python
 
 func RateLimitingMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ip := getClientIP(ctx)
-		log.Println("IP Address: ", ip) // ::1 <=> 127.0.0.1
+		// log.Println("IP Address: ", ip) // ::1 <=> 127.0.0.1
 
 		limiter := getRateLimiter(ip)
 		if !limiter.Allow() {

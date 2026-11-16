@@ -23,7 +23,10 @@ func ApiKeyMiddleware() gin.HandlerFunc {
 		if apiKey != expectiveKey {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid API Key"})
 			return
-		} 
+		}
+
+		ctx.Set("username", "minhbao") //Bất kỳ request nào cũng sẽ được tạo ra username này
+										// => Bất kỳ request nào cũng có thể lấy được nó
 
 		ctx.Next()
 	}

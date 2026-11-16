@@ -7,13 +7,12 @@ import (
 	"io"
 	"log"
 	"net/url"
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type CustomResponseWriter struct {
@@ -29,16 +28,23 @@ func (w *CustomResponseWriter) Write(data []byte) (n int, err error) {
 func LoggerMiddleware() gin.HandlerFunc {
 	logPath := "logs/http.log"
 
-	if err := os.MkdirAll(filepath.Dir(logPath), os.ModePerm); err != nil {
-		panic(err)
-	}
+	// if err := os.MkdirAll(filepath.Dir(logPath), os.ModePerm); err != nil {
+	// 	panic(err)
+	// }
 
-	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		panic(err)
-	}
+	// logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	logger := zerolog.New(logFile).With().Timestamp().Logger()
+	logger := zerolog.New(&lumberjack.Logger{
+		Filename:   logPath,
+		MaxSize:    1, // megabytes
+		MaxBackups: 5,
+		MaxAge:     5,    //days
+		Compress:   true, // disabled by default
+		LocalTime:  true,
+	}).With().Timestamp().Logger()
 
 	return func(ctx *gin.Context) {
 		start := time.Now()
@@ -48,7 +54,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 
 		// multipart/form-data
 		if strings.HasPrefix(contentType, "multipart/form-data") {
-			if ctx.Request.ParseMultipartForm(32 << 20); err == nil && ctx.Request.MultipartForm != nil {
+			if err := ctx.Request.ParseMultipartForm(32 << 20); err == nil && ctx.Request.MultipartForm != nil {
 				// for value
 				for key, vals := range ctx.Request.MultipartForm.Value {
 					if len(vals) == 1 {
@@ -102,7 +108,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 
 		customWriter := &CustomResponseWriter{
 			ResponseWriter: ctx.Writer,
-			body: bytes.NewBufferString(""),
+			body:           bytes.NewBufferString(""),
 		}
 
 		ctx.Writer = customWriter
@@ -121,9 +127,9 @@ func LoggerMiddleware() gin.HandlerFunc {
 		if strings.HasPrefix(responseContentType, "image/jpeg") {
 			// hinh
 			responseBodyParse = "[BINARY DATA]"
-		} else if strings.HasPrefix(responseContentType, "application/json") || 
-				strings.HasPrefix(strings.TrimSpace(responseBodyRaw), "{") ||  
-				strings.HasPrefix(strings.TrimSpace(responseBodyRaw), "["){
+		} else if strings.HasPrefix(responseContentType, "application/json") ||
+			strings.HasPrefix(strings.TrimSpace(responseBodyRaw), "{") ||
+			strings.HasPrefix(strings.TrimSpace(responseBodyRaw), "[") {
 			if err := json.Unmarshal([]byte(responseBodyRaw), &responseBodyParse); err != nil {
 				responseBodyParse = responseBodyRaw
 			}
