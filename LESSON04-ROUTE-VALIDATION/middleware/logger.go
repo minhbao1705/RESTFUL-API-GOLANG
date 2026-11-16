@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -14,6 +15,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog"
 )
+
+type CustomResponseWriter struct {
+	gin.ResponseWriter
+	body *bytes.Buffer
+}
+
+func (w *CustomResponseWriter) Write(data []byte) (n int, err error) {
+	w.body.Write(data)
+	return w.ResponseWriter.Write(data)
+}
 
 func LoggerMiddleware() gin.HandlerFunc {
 	logPath := "logs/http.log"
@@ -89,6 +100,13 @@ func LoggerMiddleware() gin.HandlerFunc {
 
 		}
 
+		customWriter := &CustomResponseWriter{
+			ResponseWriter: ctx.Writer,
+			body: bytes.NewBufferString(""),
+		}
+
+		ctx.Writer = customWriter
+
 		ctx.Next()
 
 		duration := time.Since(start)
@@ -96,6 +114,25 @@ func LoggerMiddleware() gin.HandlerFunc {
 		logEvent := logger.Info()
 
 		statusCode := ctx.Writer.Status()
+
+		responseContentType := ctx.Writer.Header().Get("Content-Type")
+		responseBodyRaw := customWriter.body.String()
+		var responseBodyParse interface{}
+		if strings.HasPrefix(responseContentType, "image/jpeg") {
+			// hinh
+			responseBodyParse = "[BINARY DATA]"
+		} else if strings.HasPrefix(responseContentType, "application/json") || 
+				strings.HasPrefix(strings.TrimSpace(responseBodyRaw), "{") ||  
+				strings.HasPrefix(strings.TrimSpace(responseBodyRaw), "["){
+			if err := json.Unmarshal([]byte(responseBodyRaw), &responseBodyParse); err != nil {
+				responseBodyParse = responseBodyRaw
+			}
+
+		} else {
+			responseBodyParse = responseBodyRaw
+		}
+		log.Printf("%s", responseBodyRaw)
+
 		if statusCode >= 500 {
 			logEvent = logger.Error()
 		} else if statusCode >= 400 {
@@ -116,6 +153,7 @@ func LoggerMiddleware() gin.HandlerFunc {
 			Int64("content_length", ctx.Request.ContentLength).
 			Interface("headers", ctx.Request.Header).
 			Interface("request_body", requestbody).
+			Interface("reponse_body", responseBodyParse).
 			Int("status_code", statusCode).
 			Int64("duration_ms", duration.Microseconds()).
 			Msg("HTTP Request log")
