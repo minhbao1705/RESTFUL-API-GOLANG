@@ -11,9 +11,18 @@ type UserRoutes struct {
 }
 
 func NewUserRoutes(handler *handler.UserHandler) *UserRoutes {
-	return &UserRoutes{}
+	return &UserRoutes{
+		handler: handler,
+	}
 }
 
 func (ur *UserRoutes) Register(r *gin.RouterGroup) {
-	
+	users := r.Group("/users")
+	{
+		users.GET("", ur.handler.GetAllUsers)
+		users.POST("", ur.handler.CreateUser)
+		users.GET("/:uuid", ur.handler.GetUserByUUID)
+		users.PUT("", ur.handler.UpdateUser)
+		users.DELETE("", ur.handler.DeleteUser)
+	}
 }
