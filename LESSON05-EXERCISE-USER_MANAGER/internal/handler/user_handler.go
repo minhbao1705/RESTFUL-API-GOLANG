@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"user-management-api/dto"
 	"user-management-api/internal/models"
 	"user-management-api/internal/service"
 	"user-management-api/internal/utils"
@@ -24,10 +25,13 @@ func (uh *UserHandler) GetAllUsers(ctx *gin.Context) {
 
 }
 
+// Data Transfer obj -> DTO
+
 func (uh *UserHandler) CreateUser(ctx *gin.Context) {
 	var user models.User
 	if err := ctx.ShouldBindJSON(&user); err != nil {
 		ctx.JSON(http.StatusBadRequest, validation.HandleValidationErrors(err))
+		return
 	}
 
 	createdUser, err := uh.service.CreateUser(user)
@@ -37,7 +41,9 @@ func (uh *UserHandler) CreateUser(ctx *gin.Context) {
 		return
 	}
 
-	utils.ResponseSuccess(ctx, http.StatusCreated, createdUser)
+	userDTO := dto.MapUserToDTO(createdUser)
+
+	utils.ResponseSuccess(ctx, http.StatusCreated, &userDTO)
 
 }
 
