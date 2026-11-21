@@ -86,8 +86,38 @@ func (us *userService) GetUserByUUID(uuid string) (models.User, error) {
 	return user, nil
 }
 
-func (us *userService) UpdateUser() {
+func (us *userService) 	UpdateUser(uuid string, updateduser models.User) (models.User, error) {
+	updateduser.Email = utils.NormalizeString(updateduser.Email)
 
+	if _, exist := us.repo.FindByEmail(updateduser.Email); exist {
+		return models.User{}, utils.NewError("email already exis", utils.ErrCodeConflict)
+	}
+
+	currentUser, found := us.repo.FindByUUID(uuid)
+	if !found {
+		return models.User{}, utils.NewError("user not found", utils.ErrCodeNotFound)
+	}
+
+	currentUser.Name = updateduser.Name
+	currentUser.Email = updateduser.Email
+	currentUser.Age = updateduser.Age
+	currentUser.Status = updateduser.Status
+	currentUser.Level = updateduser.Level
+
+	if updateduser.Password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(updateduser.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return models.User{}, utils.WrapError(err, "failed to hash password", utils.ErrCodeInternal)
+		}
+
+		currentUser.Password = string(hashedPassword)
+	}
+
+	if err := us.repo.Update(uuid, currentUser); err != nil {
+		return models.User{}, utils.WrapError(err, "failed to update user", utils.ErrCodeInternal)
+	}
+
+	return currentUser, nil
 }
 
 func (us *userService) DeleteUser() {
