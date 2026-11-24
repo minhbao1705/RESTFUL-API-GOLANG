@@ -61,7 +61,7 @@ ALTER SEQUENCE public.categories_category_id_seq OWNED BY public.categories.cate
 
 CREATE TABLE public.courses (
     course_id integer NOT NULL,
-    course_name character varying(50) NOT NULL
+    name character varying(50) NOT NULL
 );
 
 
@@ -300,7 +300,7 @@ COPY public.categories (category_id, name) FROM stdin;
 -- Data for Name: courses; Type: TABLE DATA; Schema: public; Owner: root
 --
 
-COPY public.courses (course_id, course_name) FROM stdin;
+COPY public.courses (course_id, name) FROM stdin;
 \.
 
 
