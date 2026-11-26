@@ -1,6 +1,8 @@
 package repository
 
-type UserRepository interface{
-	Create()
-	FindById()
+import "hoc-golang/internal/models"
+
+type UserRepository interface {
+	Create(user *models.User)
+	FindById(id int)
 }
