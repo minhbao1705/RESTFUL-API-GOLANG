@@ -28,7 +28,7 @@ func main() {
 	userRepository := repository.NewSQLUserRepository(db.DB)
 	userHander := handlers.NewUserHander(userRepository)
 
-	r.GET("/api/v1/users/:id", userHander.GetUserById)
+	r.GET("/api/v1/users/:uuid", userHander.GetUserById)
 	r.POST("/api/v1/users", userHander.CreateUser)
 
 	r.Run(":8080")
